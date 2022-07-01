@@ -210,7 +210,21 @@ void ParagraphImpl::layout(SkScalar rawWidth) {
 
     //SkDebugf("layout('%s', %f): %f %f\n", fText.c_str(), rawWidth, fMinIntrinsicWidth, fMaxIntrinsicWidth);
 }
+SkPath ParagraphImpl::getPath(SkCanvas& canvas)
+{
+    SkPath path;
 
+    for (auto& line : fLines) {
+        line.ensureTextBlobCachePopulated();
+
+        for (auto& record : line.fTextBlobCache) {
+            auto offset = record.fOffset;
+            canvas.drawTextBlobToPath(record.fBlob.get(), offset.fX, offset.fY, path);
+        }
+    }
+
+    return path;
+}
 void ParagraphImpl::paint(SkCanvas* canvas, SkScalar x, SkScalar y) {
 
     if (fParagraphStyle.getDrawOptions() == DrawOptions::kDirect) {

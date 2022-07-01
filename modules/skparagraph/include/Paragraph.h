@@ -37,6 +37,8 @@ public:
 
     virtual void layout(SkScalar width) = 0;
 
+    virtual SkPath getPath(SkCanvas& canvas) = 0;
+
     virtual void paint(SkCanvas* canvas, SkScalar x, SkScalar y) = 0;
 
     // Returns a vector of bounding boxes that enclose all text between

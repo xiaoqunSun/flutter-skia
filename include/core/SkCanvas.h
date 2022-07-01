@@ -2105,6 +2105,8 @@ public:
     void drawAnnotation(const SkRect& rect, const char key[], const sk_sp<SkData>& value) {
         this->drawAnnotation(rect, key, value.get());
     }
+    virtual void drawTextBlobToPath(const SkTextBlob* blob, SkScalar x, SkScalar y,
+                              SkPath& path);
 
     /** Returns true if clip is empty; that is, nothing will draw.
 

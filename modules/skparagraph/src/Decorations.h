@@ -13,6 +13,7 @@ namespace textlayout {
 class Decorations {
     public:
     void paint(SkCanvas* canvas, const TextStyle& textStyle, const TextLine::ClipContext& context, SkScalar baseline);
+    void toPath(SkPath& path, const TextStyle& textStyle, const TextLine::ClipContext& context, SkScalar baseline);
 
     private:
 

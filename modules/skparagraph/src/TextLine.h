@@ -88,7 +88,7 @@ public:
     void format(TextAlign align, SkScalar maxWidth);
     void paint(SkCanvas* canvas, SkScalar x, SkScalar y);
     void visit(SkScalar x, SkScalar y);
-    void ensureTextBlobCachePopulated();
+    void ensureTextBlobCachePopulated(bool forGetPath = false);
 
     void createEllipsis(SkScalar maxWidth, const SkString& ellipsis, bool ltr);
 

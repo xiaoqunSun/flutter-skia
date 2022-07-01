@@ -6,6 +6,7 @@
 #include "include/core/SkPictureRecorder.h"
 #include "include/core/SkSpan.h"
 #include "include/core/SkTypeface.h"
+#include "include/core/SkTextBlob.h"
 #include "include/private/SkTFitsIn.h"
 #include "include/private/SkTo.h"
 #include "modules/skparagraph/include/Metrics.h"
@@ -14,10 +15,12 @@
 #include "modules/skparagraph/include/TextStyle.h"
 #include "modules/skparagraph/src/OneLineShaper.h"
 #include "modules/skparagraph/src/ParagraphImpl.h"
+#include "modules/skparagraph/src/Decorations.h"
 #include "modules/skparagraph/src/Run.h"
 #include "modules/skparagraph/src/TextLine.h"
 #include "modules/skparagraph/src/TextWrapper.h"
 #include "src/utils/SkUTF.h"
+#include "src/core/SkGlyphRun.h"
 #include <math.h>
 #include <algorithm>
 #include <utility>
@@ -207,6 +210,135 @@ void ParagraphImpl::layout(SkScalar rawWidth) {
     //SkDebugf("layout('%s', %f): %f %f\n", fText.c_str(), rawWidth, fMinIntrinsicWidth, fMaxIntrinsicWidth);
 }
 
+
+SkPath ParagraphImpl::getPath(int begin,int end)
+{
+    SkPath path;
+    if (begin != -1 && begin > end)
+        return path;
+    if (begin == -1) {
+       begin = 1;
+       end = 0x7FFFFFFF;
+    }
+    begin = begin - 1;
+    bool breakLoop = false;
+    int index = 0;
+    for (auto& line : fLines) {
+        SkScalar totalOffset = 0;
+        line.iterateThroughVisualRuns(false,
+            [&]
+            (const Run* run, SkScalar runOffsetInLine, TextRange textRange, SkScalar* runWidthInLine) {
+            if (run->placeholderStyle() != nullptr) {
+                *runWidthInLine = run->advance().fX;
+                return true;
+            }
+            *runWidthInLine = line.iterateThroughSingleRunByStyles(
+            run, runOffsetInLine, textRange, StyleType::kDecorations,
+            [&](TextRange textRange, const TextStyle& style, const  TextLine::ClipContext& context_) {
+                Cluster* _start = nullptr;
+                bool found;
+                ClusterIndex startIndex;
+                ClusterIndex endIndex;
+                
+                std::tie(found, startIndex, endIndex) = run->findLimitingClusters(textRange);
+                if (!found) {
+                    return;
+                }
+                _start = &this->cluster(startIndex);
+
+                TextLine::ClipContext context = context_;
+                SkScalar correctedBaseline = SkScalarFloorToScalar(line.baseline() + style.getBaselineShift() +  0.5);
+
+                SkTextBlobBuilder builder;
+                context.run->copyTo(builder, SkToU32(context.pos), context.size);
+                auto blob = builder.make();
+                auto blobOffset = SkPoint::Make(line.offset().fX + context.fTextShift,
+                                   line.offset().fY + correctedBaseline);
+                size_t s = fmax(index,begin);
+                
+                if(blob) {
+                    static  std::unique_ptr<SkGlyphRunBuilder> fScratchGlyphRunBuilder = std::make_unique<SkGlyphRunBuilder>();
+                    auto glyphRunList = fScratchGlyphRunBuilder->blobToGlyphRunList(*blob, {blobOffset.fX, blobOffset.fY});
+                    for (auto& glyphRun : glyphRunList) {
+                        
+                        struct Rec {
+                            int* fIndex;
+                            int fBegin;
+                            int fEnd;
+                            SkPath*        fPath;
+                            const SkPoint  fOffset;
+                            const SkPoint* fPos;
+                        } rec = { &index,begin,end,&path, blobOffset, glyphRun.positions().data() };
+
+                        glyphRun.font().getPaths(glyphRun.glyphsIDs().data(), SkToInt(glyphRun.glyphsIDs().size()),
+                                    [](const SkPath* glyphPath, const SkMatrix& mx, void* ctx) {  
+                                        Rec* rec = reinterpret_cast<Rec*>(ctx);
+                                    
+                                        if (glyphPath) {                                            
+                                            if(rec->fBegin == -1 || (rec->fBegin <= (*rec->fIndex) && rec->fEnd > (*rec->fIndex))) {
+                                                SkMatrix total = mx;
+                                                total.postTranslate(rec->fPos->fX + rec->fOffset.fX,
+                                                                    rec->fPos->fY + rec->fOffset.fY);
+                                                rec->fPath->addPath(*glyphPath, total);   
+                                                                                                
+                                            }
+                                            else if (rec->fBegin > (*rec->fIndex)) {
+                                                
+                                            }
+                                            else if(rec->fEnd <= (*rec->fIndex)) {
+                                                
+                                            }  
+                                            (*rec->fIndex)++;                                          
+                                        } else {
+                                            // TODO: this is going to drop color emojis.
+                                        }
+                                        rec->fPos += 1; // move to the next glyph's position
+                                    }, &rec);  
+                        if (begin != -1 && end <= index)
+                            break;                                                      
+                    }
+                }
+                size_t e = fmin(index,end);
+
+                if (e > s && style.getDecorationType() != TextDecoration::kNoDecoration)
+                {
+                    Cluster* d_start = nullptr;
+                    Cluster* d_end = &this->cluster(e-1);
+                    SkScalar _w = 0;
+                    if(s > startIndex) {
+                        d_start = &this->cluster(s-1);
+                        int _size = (d_start->isHardBreak() ? d_start->startPos() : d_start->endPos()) - _start->startPos();
+                        _w = run->calculateWidth(_start->startPos(), _start->startPos() + _size, false);
+                    
+                    }
+
+                    d_start = &this->cluster(s);
+                    int size = (d_end->isHardBreak() ? d_end->startPos() : d_end->endPos()) - d_start->startPos();
+                    SkScalar w = run->calculateWidth(d_start->startPos(), d_start->startPos() + size, false);
+
+                    TextLine::ClipContext decorationContext = context;
+                    decorationContext.clip.fLeft += _w;
+                    decorationContext.clip.fRight = decorationContext.clip.fLeft + w;
+                    Decorations decorations;       
+                    SkPath decorationPath;          
+
+                    decorations.toPath(decorationPath, style, decorationContext, correctedBaseline);
+
+                    SkMatrix mat;
+                    mat.postTranslate(line.offset().fX, line.offset().fY + style.getBaselineShift());          
+          
+                    path.addPath(decorationPath,mat);
+                }
+                
+                totalOffset += context_.clip.width();
+            });
+            return true;
+        });
+        if (breakLoop)
+            return path;  
+    }
+    return path;
+}
 void ParagraphImpl::paint(SkCanvas* canvas, SkScalar x, SkScalar y) {
     for (auto& line : fLines) {
         line.paint(canvas, x, y);

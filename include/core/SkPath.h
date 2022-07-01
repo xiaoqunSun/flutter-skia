@@ -21,6 +21,7 @@ class SkData;
 class SkPathRef;
 class SkRRect;
 class SkWStream;
+class SkPaint;
 
 enum class SkPathConvexity;
 enum class SkPathFirstDirection;
@@ -201,6 +202,8 @@ public:
     */
     bool interpolate(const SkPath& ending, SkScalar weight, SkPath* out) const;
 
+    SkPath strokePath(const SkPaint& paint) const;
+    
     /** Returns SkPathFillType, the rule used to fill SkPath.
 
         @return  current SkPathFillType setting
@@ -1756,6 +1759,7 @@ public:
     */
     bool isValid() const;
 
+    bool getActiveSpans(std::vector<float>& out) const;
 private:
     SkPath(sk_sp<SkPathRef>, SkPathFillType, bool isVolatile, SkPathConvexity,
            SkPathFirstDirection firstDirection);

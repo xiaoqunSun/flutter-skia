@@ -12,6 +12,7 @@
 #include "include/core/SkSpan.h"
 #include "include/core/SkString.h"
 #include "include/core/SkTypes.h"
+#include "include/core/SkPath.h"
 #include "include/private/SkBitmaskEnum.h"
 #include "include/private/SkOnce.h"
 #include "include/private/SkTArray.h"
@@ -114,6 +115,7 @@ public:
     ~ParagraphImpl() override;
 
     void layout(SkScalar width) override;
+    SkPath getPath(int begin,int end) override;
     void paint(SkCanvas* canvas, SkScalar x, SkScalar y) override;
     std::vector<TextBox> getRectsForRange(unsigned start,
                                           unsigned end,

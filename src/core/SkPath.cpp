@@ -9,6 +9,7 @@
 
 #include "include/core/SkData.h"
 #include "include/core/SkMath.h"
+#include "include/core/SkPaint.h"
 #include "include/core/SkPathBuilder.h"
 #include "include/core/SkRRect.h"
 #include "include/private/SkMacros.h"
@@ -23,8 +24,14 @@
 #include "src/core/SkPointPriv.h"
 #include "src/core/SkSafeMath.h"
 #include "src/core/SkTLazy.h"
+#include "src/core/SkStroke.h"
 // need SkDVector
 #include "src/pathops/SkPathOpsPoint.h"
+#include "src/pathops/SkAddIntersections.h"
+#include "src/pathops/SkOpCoincidence.h"
+#include "src/pathops/SkOpEdgeBuilder.h"
+#include "src/pathops/SkPathOpsCommon.h"
+#include "src/pathops/SkPathWriter.h"
 
 #include <cmath>
 #include <utility>
@@ -253,6 +260,12 @@ bool SkPath::interpolate(const SkPath& ending, SkScalar weight, SkPath* out) con
     fPathRef->interpolate(*ending.fPathRef, weight, out->fPathRef.get());
     return true;
 }
+SkPath SkPath::strokePath(const SkPaint& paint) const {
+    SkStroke stroker(paint);
+    SkPath dst;
+    stroker.strokePath(*this, &dst);
+    return dst;
+}
 
 static inline bool check_edge_against_rect(const SkPoint& p0,
                                            const SkPoint& p1,
@@ -354,6 +367,95 @@ uint32_t SkPath::getGenerationID() const {
     genID |= static_cast<uint32_t>(fFillType) << SkPathPriv::kPathRefGenIDBitCnt;
 #endif
     return genID;
+}
+
+bool SkPath::getActiveSpans(std::vector<float>& out) const
+{   
+    out.push_back(0.0f);
+	int spanCount = 0;
+	SkSTArenaAlloc<4096> allocator;  // FIXME: constant-ize, tune
+	SkOpContour contour;
+	SkOpContourHead* contourList = static_cast<SkOpContourHead*>(&contour);
+	SkOpGlobalState globalState(contourList, &allocator
+		SkDEBUGPARAMS(false) SkDEBUGPARAMS(nullptr));
+	SkOpCoincidence coincidence(&globalState);
+	SkOpEdgeBuilder builder(*this, contourList, &globalState,true);
+	if (!builder.finish()) {
+		return false;
+	}
+	if (!SortContourList(&contourList, false, false)) {
+		return false;
+	}
+	// find all intersections between segments
+	SkOpContour* current = contourList;
+	do {
+		SkOpContour* next = current;
+		while (AddIntersectTs(current, next, &coincidence)
+			&& (next = next->next()));
+	} while ((current = current->next()));
+	current = contourList;
+
+	do {
+		SkOpSegment* segment = current->first();
+		do {
+			if (segment->done()) {
+				continue;
+			}
+			int lastId = -1;
+			double lastT = -1;
+			const SkOpSpan* span = segment->head();
+			do {
+				if (span->done()) {
+					continue;
+				}
+				if (lastId == segment->debugID() && lastT == span->t()) {
+					continue;
+				}
+				lastId = segment->debugID();
+				lastT = span->t();
+
+ 				SkDCurve curvePart;
+				segment->subDivide(span, span->next(), &curvePart);
+ 				const SkDPoint* pts = curvePart.fCubic.fPts;
+
+                SkPath::Verb verbType = segment->verb();
+
+				if (SkPath::kConic_Verb == verbType) {
+					SkPoint quads[5];
+                    SkPoint p0 = SkPoint::Make(pts[0].fX, pts[0].fY);
+                    SkPoint p1 = SkPoint::Make(pts[1].fX, pts[1].fY);
+                    SkPoint p2 = SkPoint::Make(pts[2].fX, pts[2].fY);
+
+                    SkPath::ConvertConicToQuads(p0,p1,p2, curvePart.fConic.fWeight, quads, 1);
+
+                    out.push_back(SkPath::kQuad_Verb);
+                    out.push_back(quads[0].fX);
+                    out.push_back(quads[0].fY);
+                    out.push_back(quads[1].fX);
+                    out.push_back(quads[1].fY);
+                    out.push_back(quads[2].fX);
+                    out.push_back(quads[2].fY);
+                    out.push_back(SkPath::kQuad_Verb);
+                    out.push_back(quads[2].fX);
+                    out.push_back(quads[2].fY);
+                    out.push_back(quads[3].fX);
+                    out.push_back(quads[3].fY);
+                    out.push_back(quads[4].fX);
+                    out.push_back(quads[4].fY);
+                    spanCount+=2;
+				} else {
+                    out.push_back(verbType);
+                    for (int vIndex = 0; vIndex <= SkPathOpsVerbToPoints(verbType); ++vIndex) {
+                        out.push_back(pts[vIndex].fX);
+                        out.push_back(pts[vIndex].fY);
+                    }
+                    spanCount++;
+                }			
+			} while ((span = span->next()->upCastable()));
+		} while ((segment = segment->next()));
+	} while ((current = current->next()));
+	out[0] = spanCount;
+	return true;
 }
 
 SkPath& SkPath::reset() {

@@ -80,11 +80,11 @@
 
       CanvasKit.MakeGrContext = CanvasKit.MakeWebGLContext;
 
-      CanvasKit.MakeOnScreenGLSurface = function(grCtx, w, h, colorspace) {
+      CanvasKit.MakeOnScreenGLSurface = function(grCtx, w, h, colorspace,maxSampleCount) {
         if (!this.setCurrentContext(grCtx._context)) {
           return null;
         }
-        var surface = this._MakeOnScreenGLSurface(grCtx, w, h, colorspace);
+        var surface = this._MakeOnScreenGLSurface(grCtx, w, h, colorspace,maxSampleCount);
         if (!surface) {
           return null;
         }

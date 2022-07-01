@@ -183,7 +183,7 @@ sk_sp<GrDirectContext> MakeGrContext()
 }
 
 sk_sp<SkSurface> MakeOnScreenGLSurface(sk_sp<GrDirectContext> dContext, int width, int height,
-                                       sk_sp<SkColorSpace> colorSpace) {
+                                       sk_sp<SkColorSpace> colorSpace,int maxSampleCount) {
     // WebGL should already be clearing the color and stencil buffers, but do it again here to
     // ensure Skia receives them in the expected state.
     emscripten_glBindFramebuffer(GL_FRAMEBUFFER, 0);
@@ -198,7 +198,7 @@ sk_sp<SkSurface> MakeOnScreenGLSurface(sk_sp<GrDirectContext> dContext, int widt
 
     GrGLint sampleCnt;
     emscripten_glGetIntegerv(GL_SAMPLES, &sampleCnt);
-
+    sampleCnt = fmax(1,fmin(maxSampleCount,sampleCnt));
     GrGLint stencil;
     emscripten_glGetIntegerv(GL_STENCIL_BITS, &stencil);
 
@@ -498,6 +498,11 @@ Float32Array ToCmds(const SkPath& path) {
     return MakeTypedArray(cmds.size(), (const float*)cmds.data());
 }
 
+Float32Array GetActiveSpans(const SkPath& path) {
+    std::vector<float> spans;
+    path.getActiveSpans(spans);
+    return MakeTypedArray(spans.size(), (const float*)spans.data());
+}
 SkPathOrNull MakePathFromCmds(WASMPointerF32 cptr, int numCmds) {
     const auto* cmds = reinterpret_cast<const float*>(cptr);
     SkPath path;
@@ -1706,7 +1711,7 @@ EMSCRIPTEN_BINDINGS(Skia) {
         .function("_dash", &ApplyDash)
         .function("_trim", &ApplyTrim)
         .function("_stroke", &ApplyStroke)
-
+        .function("strokePath",&SkPath::strokePath)
 #ifdef CK_INCLUDE_PATHOPS
         // PathOps
         .function("_simplify", &ApplySimplify)
@@ -1716,6 +1721,7 @@ EMSCRIPTEN_BINDINGS(Skia) {
         // Exporting
         .function("toSVGString", &ToSVGString)
         .function("toCmds", &ToCmds)
+        .function("getActiveSpans",&GetActiveSpans)
 
         .function("setFillType", select_overload<void(SkPathFillType)>(&SkPath::setFillType))
         .function("getFillType", &SkPath::getFillType)

@@ -89,7 +89,7 @@ public:
     void format(TextAlign align, SkScalar maxWidth);
     SkRect paint(SkCanvas* canvas, SkScalar x, SkScalar y);
     void visit(SkScalar x, SkScalar y);
-    void ensureTextBlobCachePopulated();
+    void ensureTextBlobCachePopulated(bool forGetPath = false);
 
     void createEllipsis(SkScalar maxWidth, const SkString& ellipsis, bool ltr);
 
@@ -169,6 +169,7 @@ private:
         // Extra fields only used for the (experimental) visitor
         const Run* fVisitor_Run;
         size_t     fVisitor_Pos;
+        SkPath decorationPath;
     };
     bool fTextBlobCachePopulated;
 public:

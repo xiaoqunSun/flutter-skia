@@ -18,6 +18,7 @@
 #include "modules/skparagraph/src/TextLine.h"
 #include "modules/skparagraph/src/TextWrapper.h"
 #include "src/utils/SkUTF.h"
+#include "src/core/SkGlyphRun.h"
 #include <math.h>
 #include <algorithm>
 #include <utility>
@@ -210,16 +211,61 @@ void ParagraphImpl::layout(SkScalar rawWidth) {
 
     //SkDebugf("layout('%s', %f): %f %f\n", fText.c_str(), rawWidth, fMinIntrinsicWidth, fMaxIntrinsicWidth);
 }
-SkPath ParagraphImpl::getPath(SkCanvas& canvas)
+
+
+SkPath ParagraphImpl::getPath(int begin,int end)
 {
     SkPath path;
-
+    if (begin != -1 && begin > end)
+        return path;
+    
+    int index = 0;
     for (auto& line : fLines) {
-        line.ensureTextBlobCachePopulated();
+        line.ensureTextBlobCachePopulated(true);
 
-        for (auto& record : line.fTextBlobCache) {
+        for (auto& record : line.fTextBlobCache) {   
             auto offset = record.fOffset;
-            canvas.drawTextBlobToPath(record.fBlob.get(), offset.fX, offset.fY, path);
+            auto blob = record.fBlob.get();
+            if(blob) {
+                static  std::unique_ptr<SkGlyphRunBuilder> fScratchGlyphRunBuilder = std::make_unique<SkGlyphRunBuilder>();
+                auto glyphRunList = fScratchGlyphRunBuilder->blobToGlyphRunList(*blob, {offset.fX, offset.fY});
+                for (auto& glyphRun : glyphRunList) {
+                    
+                    struct Rec {
+                        int* fIndex;
+                        int fBegin;
+                        int fEnd;
+                        SkPath*        fPath;
+                        const SkPoint  fOffset;
+                        const SkPoint* fPos;
+                    } rec = { &index,begin,end,&path, offset, glyphRun.positions().data() };
+
+                    glyphRun.font().getPaths(glyphRun.glyphsIDs().data(), SkToInt(glyphRun.glyphsIDs().size()),
+                                [](const SkPath* glyphPath, const SkMatrix& mx, void* ctx) {  
+                                    Rec* rec = reinterpret_cast<Rec*>(ctx);
+                                    (*rec->fIndex)++;
+                                    if (glyphPath) {
+                                        if(rec->fBegin == -1 || (rec->fBegin <= (*rec->fIndex) && rec->fEnd >= (*rec->fIndex))) {
+                                            SkMatrix total = mx;
+                                            total.postTranslate(rec->fPos->fX + rec->fOffset.fX,
+                                                                rec->fPos->fY + rec->fOffset.fY);
+                                            rec->fPath->addPath(*glyphPath, total);  
+                                            // if(rec->fDecorationsPath) 
+                                            //     rec->fDecorationsPath->addPath(*glyphPath, total);                                                          
+                                        }
+                                          
+                                    } else {
+                                        // TODO: this is going to drop color emojis.
+                                    }
+                                    rec->fPos += 1; // move to the next glyph's position
+                                }, &rec);                         
+                    if (begin != -1 && end <= index)
+                        break;                              
+                }
+                path.addPath(record.decorationPath);
+                if (begin != -1 && end <= index)
+                    return path;
+            }
         }
     }
 

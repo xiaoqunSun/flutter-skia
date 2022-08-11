@@ -91,7 +91,40 @@ void Decorations::paint(SkCanvas* canvas, const TextStyle& textStyle, const Text
         }
     }
 }
+void Decorations::toPath(SkPath& path, const TextStyle& textStyle, const TextLine::ClipContext& context, SkScalar baseline)
+{
+    if (textStyle.getDecorationType() == TextDecoration::kNoDecoration) {
+        return;
+    }
 
+    // Get thickness and position
+    calculateThickness(textStyle, context.run->font().refTypeface());
+
+    for (auto decoration : AllTextDecorations) {
+        if ((textStyle.getDecorationType() & decoration) == 0) {
+            continue;
+        }
+
+        calculatePosition(decoration, context.run->correctAscent());
+
+        calculatePaint(textStyle);
+
+        auto width = context.clip.width();
+        SkScalar x = context.clip.left();
+        SkScalar y = context.clip.top() + fPosition;
+
+        switch (textStyle.getDecorationStyle()) {
+          case TextDecorationStyle::kSolid:
+              {
+                float radius = fPaint.getStrokeWidth() * 0.5f;
+                path.addRect({x, y - radius, x + width, y + radius});
+              }
+              break;
+          default:
+              break;
+        }
+    }
+}
 void Decorations::calculateGaps(const TextLine::ClipContext& context, const SkRect& rect,
                                 SkScalar baseline, SkScalar halo) {
     // Create a special text blob for decorations

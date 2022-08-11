@@ -114,7 +114,7 @@ public:
     ~ParagraphImpl() override;
 
     void layout(SkScalar width) override;
-    SkPath getPath(SkCanvas& canvas) override;
+    SkPath getPath(int begin,int end) override;
     void paint(SkCanvas* canvas, SkScalar x, SkScalar y) override;
     std::vector<TextBox> getRectsForRange(unsigned start,
                                           unsigned end,

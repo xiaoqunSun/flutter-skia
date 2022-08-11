@@ -220,19 +220,19 @@ SkRect TextLine::paint(SkCanvas* textCanvas, SkScalar x, SkScalar y) {
     return bounds;
 }
 
-void TextLine::ensureTextBlobCachePopulated() {
-    if (fTextBlobCachePopulated) {
+void TextLine::ensureTextBlobCachePopulated(bool forGetPah) {
+    if (fTextBlobCachePopulated && !forGetPah) {
         return;
     }
     this->iterateThroughVisualRuns(false,
-            [this]
+            [this,forGetPah]
             (const Run* run, SkScalar runOffsetInLine, TextRange textRange, SkScalar* runWidthInLine) {
             if (run->placeholderStyle() != nullptr) {
                 *runWidthInLine = run->advance().fX;
                 return true;
             }
             *runWidthInLine = this->iterateThroughSingleRunByStyles(
-            run, runOffsetInLine, textRange, StyleType::kForeground,
+            run, runOffsetInLine, textRange, forGetPah ? StyleType::kDecorations : StyleType::kForeground,
             [this](TextRange textRange, const TextStyle& style, const ClipContext& context) {
                 this->buildTextBlob(textRange, style, context);
             });
@@ -319,6 +319,7 @@ void TextLine::buildTextBlob(TextRange textRange, const TextStyle& style, const 
     fTextBlobCache.emplace_back();
     TextBlobRecord& record = fTextBlobCache.back();
 
+
     if (style.hasForeground()) {
         record.fPaint = style.getForeground();
     } else {
@@ -346,6 +347,9 @@ void TextLine::buildTextBlob(TextRange textRange, const TextStyle& style, const 
 
     record.fOffset = SkPoint::Make(this->offset().fX + context.fTextShift,
                                    this->offset().fY + correctedBaseline);
+
+    Decorations decorations;
+    decorations.toPath(record.decorationPath, style, context, correctedBaseline);                                   
 }
 
 void TextLine::TextBlobRecord::paint(SkCanvas* canvas, SkScalar x, SkScalar y) {

@@ -875,7 +875,7 @@ export interface Paragraph extends EmbindObject<Paragraph> {
      */
     layout(width: number): void;
 
-    getPath(canvas: Canvas): Path;
+    getPath(begin:number,end:number): Path;
 }
 
 export interface ParagraphBuilder extends EmbindObject<ParagraphBuilder> {

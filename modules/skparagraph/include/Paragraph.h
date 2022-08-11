@@ -37,7 +37,7 @@ public:
 
     virtual void layout(SkScalar width) = 0;
 
-    virtual SkPath getPath(SkCanvas& canvas) = 0;
+    virtual SkPath getPath(int begin,int end) = 0;
 
     virtual void paint(SkCanvas* canvas, SkScalar x, SkScalar y) = 0;
 

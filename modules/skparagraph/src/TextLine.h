@@ -169,7 +169,6 @@ private:
         // Extra fields only used for the (experimental) visitor
         const Run* fVisitor_Run;
         size_t     fVisitor_Pos;
-        SkPath decorationPath;
     };
     bool fTextBlobCachePopulated;
 public:

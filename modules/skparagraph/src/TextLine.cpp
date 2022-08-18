@@ -347,9 +347,7 @@ void TextLine::buildTextBlob(TextRange textRange, const TextStyle& style, const 
 
     record.fOffset = SkPoint::Make(this->offset().fX + context.fTextShift,
                                    this->offset().fY + correctedBaseline);
-
-    Decorations decorations;
-    decorations.toPath(record.decorationPath, style, context, correctedBaseline);                                   
+                               
 }
 
 void TextLine::TextBlobRecord::paint(SkCanvas* canvas, SkScalar x, SkScalar y) {

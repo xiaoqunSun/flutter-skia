@@ -1584,7 +1584,7 @@ EMSCRIPTEN_BINDINGS(Skia) {
         .function("_dash", &ApplyDash)
         .function("_trim", &ApplyTrim)
         .function("_stroke", &ApplyStroke)
-
+        .function("strokePath",&SkPath::strokePath)
 #ifdef SK_INCLUDE_PATHOPS
         // PathOps
         .function("_simplify", &ApplySimplify)

@@ -19,6 +19,7 @@ class SkAutoPathBoundsUpdate;
 class SkData;
 class SkRRect;
 class SkWStream;
+class SkPaint;
 
 // WIP -- define this locally, and fix call-sites to use SkPathBuilder (skbug.com/9000)
 //#define SK_HIDE_PATH_EDIT_METHODS
@@ -196,6 +197,8 @@ public:
     */
     bool interpolate(const SkPath& ending, SkScalar weight, SkPath* out) const;
 
+    SkPath strokePath(const SkPaint& paint) const;
+    
     /** Returns SkPathFillType, the rule used to fill SkPath.
 
         @return  current SkPathFillType setting

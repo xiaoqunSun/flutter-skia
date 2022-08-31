@@ -9,6 +9,7 @@
 
 #include "include/core/SkData.h"
 #include "include/core/SkMath.h"
+#include "include/core/SkPaint.h"
 #include "include/core/SkPathBuilder.h"
 #include "include/core/SkRRect.h"
 #include "include/private/SkMacros.h"
@@ -23,6 +24,7 @@
 #include "src/core/SkPointPriv.h"
 #include "src/core/SkSafeMath.h"
 #include "src/core/SkTLazy.h"
+#include "src/core/SkStroke.h"
 // need SkDVector
 #include "src/pathops/SkPathOpsPoint.h"
 
@@ -252,6 +254,12 @@ bool SkPath::interpolate(const SkPath& ending, SkScalar weight, SkPath* out) con
     out->addPath(*this);
     fPathRef->interpolate(*ending.fPathRef, weight, out->fPathRef.get());
     return true;
+}
+SkPath SkPath::strokePath(const SkPaint& paint) const {
+    SkStroke stroker(paint);
+    SkPath dst;
+    stroker.strokePath(*this, &dst);
+    return dst;
 }
 
 static inline bool check_edge_against_rect(const SkPoint& p0,

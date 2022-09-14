@@ -27,7 +27,7 @@ public:
         , fPath(&path)
         , fContourBuilder(contours2)
         , fContoursHead(contours2)
-        , fAllowOpenContours(false) {
+        , fAllowOpenContours(true) {
         init();
     }
 

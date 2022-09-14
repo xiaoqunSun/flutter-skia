@@ -1764,6 +1764,7 @@ public:
     */
     bool isValid() const { return this->isValidImpl() && fPathRef->isValid(); }
 
+    bool getActiveSpans(std::vector<float>& out) const;
 private:
     SkPath(sk_sp<SkPathRef>, SkPathFillType, bool isVolatile, SkPathConvexity,
            SkPathFirstDirection firstDirection);

@@ -413,6 +413,11 @@ Float32Array ToCmds(const SkPath& path) {
     return MakeTypedArray(cmds.size(), (const float*)cmds.data());
 }
 
+Float32Array GetActiveSpans(const SkPath& path) {
+    std::vector<float> spans;
+    path.getActiveSpans(spans);
+    return MakeTypedArray(spans.size(), (const float*)spans.data());
+}
 SkPathOrNull MakePathFromCmds(WASMPointerF32 cptr, int numCmds) {
     const auto* cmds = reinterpret_cast<const float*>(cptr);
     SkPath path;
@@ -1594,6 +1599,7 @@ EMSCRIPTEN_BINDINGS(Skia) {
         // Exporting
         .function("toSVGString", &ToSVGString)
         .function("toCmds", &ToCmds)
+        .function("getActiveSpans",&GetActiveSpans)
 
         .function("setFillType", select_overload<void(SkPathFillType)>(&SkPath::setFillType))
         .function("getFillType", &SkPath::getFillType)

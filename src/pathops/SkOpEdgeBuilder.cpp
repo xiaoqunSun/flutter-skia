@@ -184,6 +184,7 @@ bool SkOpEdgeBuilder::walk() {
                 if (contour && contour->count()) {
                     if (fAllowOpenContours) {
                         complete();
+                        contour = nullptr;
                     } else if (!close()) {
                         return false;
                     }

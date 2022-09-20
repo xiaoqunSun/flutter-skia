@@ -22,12 +22,12 @@ public:
         init();
     }
 
-    SkOpEdgeBuilder(const SkPath& path, SkOpContourHead* contours2, SkOpGlobalState* globalState)
+    SkOpEdgeBuilder(const SkPath& path, SkOpContourHead* contours2, SkOpGlobalState* globalState,bool allowOpenContours = false)
         : fGlobalState(globalState)
         , fPath(&path)
         , fContourBuilder(contours2)
         , fContoursHead(contours2)
-        , fAllowOpenContours(true) {
+        , fAllowOpenContours(allowOpenContours) {
         init();
     }
 

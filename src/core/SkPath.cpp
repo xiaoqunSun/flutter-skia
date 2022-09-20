@@ -379,7 +379,7 @@ bool SkPath::getActiveSpans(std::vector<float>& out) const
 	SkOpGlobalState globalState(contourList, &allocator
 		SkDEBUGPARAMS(false) SkDEBUGPARAMS(nullptr));
 	SkOpCoincidence coincidence(&globalState);
-	SkOpEdgeBuilder builder(*this, contourList, &globalState);
+	SkOpEdgeBuilder builder(*this, contourList, &globalState,true);
 	if (!builder.finish()) {
 		return false;
 	}

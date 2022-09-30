@@ -161,7 +161,7 @@ sk_sp<GrDirectContext> MakeGrContext()
 }
 
 sk_sp<SkSurface> MakeOnScreenGLSurface(sk_sp<GrDirectContext> dContext, int width, int height,
-                                       sk_sp<SkColorSpace> colorSpace) {
+                                       sk_sp<SkColorSpace> colorSpace,int maxSampleCount) {
     // WebGL should already be clearing the color and stencil buffers, but do it again here to
     // ensure Skia receives them in the expected state.
     emscripten_glBindFramebuffer(GL_FRAMEBUFFER, 0);
@@ -176,7 +176,7 @@ sk_sp<SkSurface> MakeOnScreenGLSurface(sk_sp<GrDirectContext> dContext, int widt
 
     GrGLint sampleCnt;
     emscripten_glGetIntegerv(GL_SAMPLES, &sampleCnt);
-
+    sampleCnt = fmax(1,fmin(maxSampleCount,sampleCnt));
     GrGLint stencil;
     emscripten_glGetIntegerv(GL_STENCIL_BITS, &stencil);
 

@@ -78,8 +78,8 @@
         return grCtx;
       }
 
-      CanvasKit.MakeOnScreenGLSurface = function(grCtx, w, h, colorspace) {
-        var surface = this._MakeOnScreenGLSurface(grCtx, w, h, colorspace);
+      CanvasKit.MakeOnScreenGLSurface = function(grCtx, w, h, colorspace,maxSampleCount) {
+        var surface = this._MakeOnScreenGLSurface(grCtx, w, h, colorspace,maxSampleCount);
         if (!surface) {
           return null;
         }

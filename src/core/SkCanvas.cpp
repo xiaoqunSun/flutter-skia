@@ -1920,38 +1920,6 @@ void SkCanvas::drawAnnotation(const SkRect& rect, const char key[], SkData* valu
     }
 }
 
-
-void _AddPath(const SkGlyphRun& glyphRun, const SkPoint& offset, SkPath* path) {
-    struct Rec {
-        SkPath*        fPath;
-        const SkPoint  fOffset;
-        const SkPoint* fPos;
-    } rec = { path, offset, glyphRun.positions().data() };
-
-    glyphRun.font().getPaths(glyphRun.glyphsIDs().data(), SkToInt(glyphRun.glyphsIDs().size()),
-            [](const SkPath* path, const SkMatrix& mx, void* ctx) {
-                Rec* rec = reinterpret_cast<Rec*>(ctx);
-                if (path) {
-                    SkMatrix total = mx;
-                    total.postTranslate(rec->fPos->fX + rec->fOffset.fX,
-                                        rec->fPos->fY + rec->fOffset.fY);
-                    rec->fPath->addPath(*path, total);
-                } else {
-                    // TODO: this is going to drop color emojis.
-                }
-                rec->fPos += 1; // move to the next glyph's position
-            }, &rec);
-}
-
-void SkCanvas::drawTextBlobToPath(const SkTextBlob* blob, SkScalar x, SkScalar y,
-                              SkPath& path) {
-    auto glyphRunList = fScratchGlyphRunBuilder->blobToGlyphRunList(*blob, {x, y});
-    for (auto& glyphRun : glyphRunList) {
-        _AddPath(glyphRun, glyphRunList.origin(), &path);
-    }
-}
-
-
 void SkCanvas::private_draw_shadow_rec(const SkPath& path, const SkDrawShadowRec& rec) {
     TRACE_EVENT0("skia", TRACE_FUNC);
     this->onDrawShadowRec(path, rec);

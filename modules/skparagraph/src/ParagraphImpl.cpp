@@ -20,7 +20,7 @@
 #include "modules/skparagraph/src/TextLine.h"
 #include "modules/skparagraph/src/TextWrapper.h"
 #include "src/utils/SkUTF.h"
-#include "src/core/SkGlyphRun.h"
+#include "src/text/GlyphRun.h"
 #include <math.h>
 #include <algorithm>
 #include <utility>
@@ -257,7 +257,7 @@ SkPath ParagraphImpl::getPath(int begin,int end)
                 size_t s = fmax(index,begin);
                 
                 if(blob) {
-                    static  std::unique_ptr<SkGlyphRunBuilder> fScratchGlyphRunBuilder = std::make_unique<SkGlyphRunBuilder>();
+                    static  std::unique_ptr<sktext::GlyphRunBuilder> fScratchGlyphRunBuilder = std::make_unique<sktext::GlyphRunBuilder>();
                     auto glyphRunList = fScratchGlyphRunBuilder->blobToGlyphRunList(*blob, {blobOffset.fX, blobOffset.fY});
                     for (auto& glyphRun : glyphRunList) {
                         
